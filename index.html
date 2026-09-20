@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سجل تتبع شحنات السيارات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F5F1E7;
+    --paper-2: #EBE4D3;
+    --ink: #1B2431;
+    --ink-soft: #4B5567;
+    --sea: #0B3B5C;
+    --sea-2: #0E4E77;
+    --rust: #BD5A2E;
+    --rust-2: #A34A24;
+    --line: #D9D0B8;
+    --good-bg: #E4EFE6; --good-fg: #2B6B45;
+    --warn-bg: #F5EAD3; --warn-fg: #8A5E1C;
+    --wait-bg: #E7ECF2; --wait-fg: #3C5876;
+    --card: #FFFFFF;
+    --shadow: 0 1px 2px rgba(27,36,49,0.06), 0 4px 14px rgba(27,36,49,0.05);
+    --radius: 10px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #10161F;
+      --paper-2: #161E29;
+      --ink: #E9E5D8;
+      --ink-soft: #A9B2C0;
+      --sea: #4FA3D1;
+      --sea-2: #6FB8DF;
+      --rust: #E38A5C;
+      --rust-2: #EFA378;
+      --line: #2A3543;
+      --good-bg: #16261C; --good-fg: #7BC79A;
+      --warn-bg: #2A2214; --warn-fg: #E0B564;
+      --wait-bg: #18212C; --wait-fg: #9DB6D2;
+      --card: #151C26;
+      --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 6px 18px rgba(0,0,0,0.3);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10161F; --paper-2: #161E29; --ink: #E9E5D8; --ink-soft: #A9B2C0;
+    --sea: #4FA3D1; --sea-2: #6FB8DF; --rust: #E38A5C; --rust-2: #EFA378;
+    --line: #2A3543; --good-bg: #16261C; --good-fg: #7BC79A;
+    --warn-bg: #2A2214; --warn-fg: #E0B564; --wait-bg: #18212C; --wait-fg: #9DB6D2;
+    --card: #151C26; --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 6px 18px rgba(0,0,0,0.3);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  .code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    letter-spacing: 0.02em;
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  header.top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; padding: 6px 2px 18px; border-bottom: 2px solid var(--line);
+    margin-bottom: 18px;
+  }
+  header.top h1 {
+    font-size: 21px; font-weight: 800; margin: 0; color: var(--sea);
+  }
+  header.top span.sub { font-size: 12.5px; color: var(--ink-soft); }
+
+  nav.tabs {
+    display: flex; gap: 6px; margin-bottom: 20px;
+    background: var(--paper-2); padding: 5px; border-radius: 12px;
+  }
+  nav.tabs button {
+    flex: 1; border: none; background: transparent; color: var(--ink-soft);
+    font-family: inherit; font-size: 14px; font-weight: 600; padding: 10px 8px;
+    border-radius: 8px; cursor: pointer; transition: background .15s, color .15s;
+  }
+  nav.tabs button.active { background: var(--card); color: var(--sea); box-shadow: var(--shadow); }
+
+  section.view { display: none; }
+  section.view.active { display: block; }
+
+  .search-box {
+    display: flex; gap: 8px; margin-bottom: 16px;
+  }
+  .search-box input {
+    flex: 1; padding: 13px 16px; border-radius: 10px; border: 1.5px solid var(--line);
+    background: var(--card); color: var(--ink); font-family: inherit; font-size: 15px;
+  }
+  .search-box input:focus { outline: 2px solid var(--sea); outline-offset: 1px; }
+  .hint { font-size: 12.5px; color: var(--ink-soft); margin: -8px 0 18px 2px; }
+
+  .empty {
+    text-align: center; padding: 50px 20px; color: var(--ink-soft);
+    border: 1.5px dashed var(--line); border-radius: var(--radius);
+  }
+  .empty b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+
+  .shipment-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 14px;
+  }
+  .ship-head {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+    padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px dashed var(--line);
+  }
+  .line-badge {
+    font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+    background: var(--sea); color: #fff;
+  }
+  .status-pill {
+    font-size: 12.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  }
+  .status-pill.wait { background: var(--wait-bg); color: var(--wait-fg); }
+  .status-pill.warn { background: var(--warn-bg); color: var(--warn-fg); }
+  .status-pill.good { background: var(--good-bg); color: var(--good-fg); }
+  .ship-head .meta { font-size: 13px; color: var(--ink-soft); }
+  .ship-head .meta b.code { color: var(--ink); font-weight: 600; }
+  .ship-head .spacer { flex: 1; }
+  .icon-btn {
+    border: 1px solid var(--line); background: transparent; color: var(--ink-soft);
+    border-radius: 8px; padding: 6px 10px; font-family: inherit; font-size: 12.5px;
+    cursor: pointer; font-weight: 600;
+  }
+  .icon-btn:hover { border-color: var(--sea); color: var(--sea); }
+
+  .client-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--paper-2);
+  }
+  .client-row:last-child { border-bottom: none; }
+  .client-row .who { min-width: 170px; }
+  .client-row .who .name { font-weight: 700; font-size: 14.5px; }
+  .client-row .who .car { font-size: 12.5px; color: var(--ink-soft); }
+  .client-row .actions { display: flex; gap: 6px; margin-inline-start: auto; flex-wrap: wrap; }
+
+  .btn {
+    border: none; border-radius: 8px; padding: 8px 13px; font-family: inherit;
+    font-size: 12.5px; font-weight: 700; cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .btn.wa { background: #E7F4EC; color: #1F7A42; }
+  .btn.mail { background: var(--wait-bg); color: var(--wait-fg); }
+  .btn.copy { background: var(--paper-2); color: var(--ink-soft); }
+  .btn:disabled, .btn.disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn.primary { background: var(--sea); color: #fff; }
+  .btn.rust { background: var(--rust); color: #fff; }
+  .btn.ghost { background: transparent; border: 1.5px solid var(--line); color: var(--ink-soft); }
+
+  .carrier-line { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 12.5px; color: var(--ink-soft); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .carrier-line a { color: var(--sea); font-weight: 700; text-decoration: none; }
+  .carrier-line a:hover { text-decoration: underline; }
+
+  form.ship-form { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); margin-bottom: 5px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--line);
+    background: var(--paper); color: var(--ink); font-family: inherit; font-size: 14px;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--sea); outline-offset: 1px; }
+  fieldset.client-fieldset {
+    border: 1.5px dashed var(--line); border-radius: 10px; padding: 14px; margin: 0 0 14px;
+  }
+  fieldset.client-fieldset legend { font-size: 13px; font-weight: 800; color: var(--sea); padding: 0 6px; }
+  .form-actions { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+
+  table.all-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  table.all-table th, table.all-table td { padding: 10px 12px; text-align: right; font-size: 13px; border-bottom: 1px solid var(--paper-2); }
+  table.all-table th { background: var(--paper-2); color: var(--ink-soft); font-weight: 700; }
+  table.all-table tr:last-child td { border-bottom: none; }
+  table.all-table td.actions-cell { display: flex; gap: 6px; }
+  .scroll-x { overflow-x: auto; border-radius: var(--radius); }
+
+  .toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; box-shadow: var(--shadow); opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  .note-box { font-size: 12.5px; color: var(--ink-soft); background: var(--paper-2); border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>سجل تتبع شحنات السيارات</h1>
+      <span class="sub">نسخة أوفلاين — بحث سريع بالاسم، رقم الحاوية، اسم السيارة أو رقم الشاصي</span>
+    </div>
+    <button class="icon-btn" id="exportBtn" title="تصدير نسخة احتياطية CSV">⭳ تصدير CSV</button>
+  </header>
+
+
+  <nav class="tabs">
+    <button data-view="search" class="active">🔍 البحث</button>
+    <button data-view="add">➕ إضافة شحنة</button>
+    <button data-view="all">📋 كل الشحنات</button>
+  </nav>
+
+  <section class="view active" id="view-search">
+    <div class="note-box">⚠️ هذه نسخة أوفلاين: البيانات تُحفظ فقط داخل هذا المتصفح على هذا الجهاز، ولا تتزامن مع أي جهاز آخر أو مع النسخة الأونلاين. احذف بيانات التصفح بحذر، ونزّل نسخة CSV احتياطية بين حين وآخر من زر "تصدير CSV" أعلاه.</div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="اكتب اسم الزبون، رقم الحاوية، اسم السيارة، أو رقم الشاصي…">
+    </div>
+    <div class="hint" id="searchHint">اترك البحث فارغاً لعرض أحدث الشحنات</div>
+    <div id="searchResults"></div>
+  </section>
+
+  <section class="view" id="view-add">
+    <div class="note-box">أدخل بيانات الحاوية مرة واحدة، ثم بيانات كل زبون من الزبائن الأربعة المشتركين في نفس الحاوية (الاسم، الهاتف، اسم السيارة، رقم الشاصي). اترك الخانات الفارغة لمن لا ينطبق عليه الحقل.</div>
+    <form class="ship-form" id="shipForm">
+      <input type="hidden" id="editId">
+      <div class="grid2">
+        <div class="field">
+          <label>رقم الحاوية *</label>
+          <input type="text" id="f_bl" class="code" required placeholder="MSCU1234567">
+        </div>
+        <div class="field">
+          <label>شركة الشحن</label>
+          <select id="f_line">
+            <option value="MSC">MSC</option>
+            <option value="CMA CGM">CMA CGM</option>
+            <option value="HMM">HMM</option>
+            <option value="أخرى">أخرى</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>الحالة الحالية</label>
+          <select id="f_status">
+            <option>تم الشحن</option>
+            <option>في عرض البحر</option>
+            <option>وصلت الميناء</option>
+            <option>في الجمارك</option>
+            <option>جاهزة للتسليم</option>
+            <option>تم التسليم</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>الموقع الحالي / الميناء</label>
+          <input type="text" id="f_location" placeholder="مثال: ميناء الجزائر">
+        </div>
+        <div class="field">
+          <label>تاريخ الوصول المتوقع</label>
+          <input type="date" id="f_eta">
+        </div>
+      </div>
+      <div id="clientsWrap"></div>
+      <div class="field">
+        <label>ملاحظات</label>
+        <textarea id="f_notes" rows="2" placeholder="أي معلومة إضافية…"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn primary">💾 حفظ الشحنة</button>
+        <button type="button" class="btn ghost" id="cancelEdit" style="display:none;">إلغاء التعديل</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="view" id="view-all">
+    <div class="hint" style="margin-top:0;">كل الشحنات المسجّلة — اضغط "تعديل" لتحديث الحالة أو الموقع</div>
+    <div class="scroll-x">
+      <table class="all-table" id="allTable">
+        <thead><tr><th>رقم الحاوية</th><th>الناقل</th><th>الحالة</th><th>الزبائن</th><th></th></tr></thead>
+        <tbody id="allTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CARRIER_LINKS = {
+  'MSC': 'https://www.msc.com/en/track-a-shipment',
+  'CMA CGM': 'https://www.cma-cgm.com/ebusiness/tracking',
+  'HMM': 'https://www.hmm21.com/',
+  'أخرى': null
+};
+const STATUS_CLASS = {
+  'تم الشحن': 'wait', 'في عرض البحر': 'wait',
+  'وصلت الميناء': 'warn', 'في الجمارك': 'warn', 'جاهزة للتسليم': 'warn',
+  'تم التسليم': 'good'
+};
+
+let shipments = []; // in-memory array of {id, ...data} — single source of truth, auto-saved to this browser's local storage
+const LOCAL_CACHE_KEY = 'car_tracker_shipments_cache';
+
+function makeId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+
+function persistLocal() {
+  try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(shipments)); } catch (e) { /* ignore */ }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function normalizePhone(raw) {
+  if (!raw) return '';
+  let d = raw.replace(/[^\d+]/g, '');
+  if (d.startsWith('+')) d = d.slice(1);
+  if (d.startsWith('0')) d = '213' + d.slice(1);
+  return d;
+}
+
+function buildMessage(client, shipment) {
+  const lines = [
+    `مرحباً ${client.name || ''}،`,
+    `تحديث بخصوص شحنة سيارتكم:`,
+    client.carName ? `🚗 السيارة: ${client.carName}` : null,
+    client.chassis ? `🔢 رقم الشاصي: ${client.chassis}` : null,
+    `📦 رقم الحاوية: ${shipment.bl}`,
+    `🚢 الناقل: ${shipment.line}`,
+    `📍 الحالة: ${shipment.status}${shipment.location ? ' - ' + shipment.location : ''}`,
+    `📅 الوصول المتوقع: ${shipment.eta || 'غير محدد'}`,
+    '', 'شكراً لثقتكم.'
+  ].filter(Boolean);
+  return lines.join('\n');
+}
+
+function escapeHtml(s) {
+  return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- rendering ----------
+function matchShipment(s, q) {
+  if (!q) return true;
+  q = q.trim().toLowerCase();
+  if ((s.bl || '').toLowerCase().includes(q)) return true;
+  return (s.clients || []).some(c =>
+    (c.name || '').toLowerCase().includes(q) ||
+    (c.carName || '').toLowerCase().includes(q) ||
+    (c.chassis || '').toLowerCase().includes(q) ||
+    (c.phone || '').toLowerCase().includes(q)
+  );
+}
+
+function renderSearch() {
+  const q = document.getElementById('searchInput').value;
+  const wrap = document.getElementById('searchResults');
+  const hint = document.getElementById('searchHint');
+  let list = shipments.filter(s => matchShipment(s, q));
+  list = list.slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  hint.textContent = q ? `${list.length} نتيجة` : 'اترك البحث فارغاً لعرض أحدث الشحنات';
+  if (!list.length) {
+    wrap.innerHTML = `<div class="empty"><b>لا توجد نتائج</b>جرّب اسماً آخر أو رقم الحاوية / رقم الشاصي</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(s => shipmentCardHtml(s, q)).join('');
+}
+
+function shipmentCardHtml(s, q) {
+  const statusClass = STATUS_CLASS[s.status] || 'wait';
+  const carrierUrl = CARRIER_LINKS[s.line];
+  const clientsHtml = (s.clients || [])
+    .filter(c => c && (c.name || c.carName || c.chassis))
+    .map((c, idx) => clientRowHtml(c, s))
+    .join('');
+  return `
+  <div class="shipment-card">
+    <div class="ship-head">
+      <span class="line-badge">${escapeHtml(s.line || 'أخرى')}</span>
+      <span class="status-pill ${statusClass}">${escapeHtml(s.status || '')}</span>
+      <span class="meta">الحاوية: <b class="code">${escapeHtml(s.bl || '-')}</b></span>
+      ${s.eta ? `<span class="meta">الوصول: <b class="code">${escapeHtml(s.eta)}</b></span>` : ''}
+      <span class="spacer"></span>
+      <button class="icon-btn" onclick="startEdit('${s.id}')">تعديل</button>
+    </div>
+    ${clientsHtml || '<div class="hint" style="margin:0;">لا يوجد زبائن مسجّلون لهذه الشحنة</div>'}
+    ${carrierUrl ? `<div class="carrier-line">🌐 لتتبع الحاوية مباشرة لدى الناقل: <a href="${carrierUrl}" target="_blank" rel="noopener">فتح موقع ${escapeHtml(s.line)}</a> والبحث برقم الحاوية <span class="code">${escapeHtml(s.bl||'')}</span></div>` : ''}
+  </div>`;
+}
+
+function clientRowHtml(c, s) {
+  const phone = normalizePhone(c.phone);
+  const msg = buildMessage(c, s);
+  const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : null;
+  const mailUrl = c.email ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('تحديث تتبع شحنة سيارتكم')}&body=${encodeURIComponent(msg)}` : null;
+  return `
+  <div class="client-row">
+    <div class="who">
+      <div class="name">${escapeHtml(c.name || 'بدون اسم')}</div>
+      <div class="car">${escapeHtml(c.carName || '')}${c.chassis ? ' · شاصي: ' + escapeHtml(c.chassis) : ''}</div>
+    </div>
+    <div class="actions">
+      <a class="btn wa ${waUrl ? '' : 'disabled'}" ${waUrl ? `href="${waUrl}" target="_blank" rel="noopener"` : ''} title="${phone ? '' : 'لا يوجد رقم هاتف مسجل'}">🟢 واتساب</a>
+      <a class="btn mail ${mailUrl ? '' : 'disabled'}" ${mailUrl ? `href="${mailUrl}"` : ''} title="${c.email ? '' : 'لا يوجد بريد إلكتروني مسجل'}">✉️ إيميل</a>
+      <button class="btn copy" onclick="copyMsg(this)" data-msg="${escapeHtml(msg)}">📋 نسخ النص</button>
+    </div>
+  </div>`;
+}
+
+function copyMsg(btn) {
+  const msg = btn.getAttribute('data-msg');
+  navigator.clipboard.writeText(msg.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'"))
+    .then(() => toast('تم نسخ نص الرسالة'))
+    .catch(() => toast('تعذر النسخ — انسخ يدوياً'));
+}
+
+function renderAllTable() {
+  const body = document.getElementById('allTableBody');
+  const list = shipments.slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:26px; color:var(--ink-soft);">لا توجد شحنات مسجّلة بعد</td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(s => `
+    <tr>
+      <td class="code">${escapeHtml(s.bl || '-')}</td>
+      <td>${escapeHtml(s.line || '-')}</td>
+      <td>${escapeHtml(s.status || '-')}</td>
+      <td>${(s.clients||[]).filter(c=>c && c.name).map(c=>escapeHtml(c.name)).join('، ') || '-'}</td>
+      <td class="actions-cell">
+        <button class="icon-btn" onclick="startEdit('${s.id}')">تعديل</button>
+        <button class="icon-btn" onclick="deleteShipment('${s.id}')">حذف</button>
+      </td>
+    </tr>`).join('');
+}
+
+// ---------- client rows in form ----------
+function renderClientFields(existing) {
+  const wrap = document.getElementById('clientsWrap');
+  wrap.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const c = (existing && existing[i]) || {};
+    const fs = document.createElement('fieldset');
+    fs.className = 'client-fieldset';
+    fs.innerHTML = `
+      <legend>الزبون ${i+1}</legend>
+      <div class="grid2">
+        <div class="field"><label>الاسم</label><input type="text" data-k="name" data-i="${i}" value="${escapeHtml(c.name||'')}"></div>
+        <div class="field"><label>رقم الهاتف (واتساب)</label><input type="text" class="code" data-k="phone" data-i="${i}" value="${escapeHtml(c.phone||'')}" placeholder="0550000000"></div>
+        <div class="field"><label>البريد الإلكتروني (اختياري)</label><input type="email" data-k="email" data-i="${i}" value="${escapeHtml(c.email||'')}"></div>
+        <div class="field"><label>اسم السيارة</label><input type="text" data-k="carName" data-i="${i}" value="${escapeHtml(c.carName||'')}" placeholder="مثال: هيونداي توسان 2023"></div>
+        <div class="field" style="grid-column: 1 / -1;"><label>رقم الشاصي (VIN)</label><input type="text" class="code" data-k="chassis" data-i="${i}" value="${escapeHtml(c.chassis||'')}"></div>
+      </div>`;
+    wrap.appendChild(fs);
+  }
+}
+
+function collectClients() {
+  const clients = [null, null, null, null];
+  document.querySelectorAll('#clientsWrap [data-k]').forEach(inp => {
+    const i = +inp.getAttribute('data-i');
+    const k = inp.getAttribute('data-k');
+    if (!clients[i]) clients[i] = {};
+    clients[i][k] = inp.value.trim();
+  });
+  return clients.filter(c => c && (c.name || c.carName || c.chassis || c.phone));
+}
+
+// ---------- form submit / edit / delete ----------
+document.getElementById('shipForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const bl = document.getElementById('f_bl').value.trim();
+  if (!bl) { toast('رقم الحاوية إجباري'); return; }
+  const data = {
+    bl,
+    line: document.getElementById('f_line').value,
+    status: document.getElementById('f_status').value,
+    location: document.getElementById('f_location').value.trim(),
+    eta: document.getElementById('f_eta').value,
+    notes: document.getElementById('f_notes').value.trim(),
+    clients: collectClients(),
+  };
+  const editId = document.getElementById('editId').value;
+  if (editId) {
+    const idx = shipments.findIndex(s => s.id === editId);
+    if (idx !== -1) shipments[idx] = { ...shipments[idx], ...data };
+    toast('تم تحديث الشحنة');
+  } else {
+    data.id = makeId();
+    data.createdAt = Date.now();
+    shipments.push(data);
+    toast('تم حفظ الشحنة');
+  }
+  await saveAll();
+  resetForm();
+  switchView('search');
+});
+
+document.getElementById('cancelEdit').addEventListener('click', resetForm);
+
+function resetForm() {
+  document.getElementById('shipForm').reset();
+  document.getElementById('editId').value = '';
+  document.getElementById('cancelEdit').style.display = 'none';
+  renderClientFields();
+}
+
+window.startEdit = function(id) {
+  const s = shipments.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('editId').value = id;
+  document.getElementById('f_bl').value = s.bl || '';
+  document.getElementById('f_line').value = s.line || 'MSC';
+  document.getElementById('f_status').value = s.status || 'تم الشحن';
+  document.getElementById('f_location').value = s.location || '';
+  document.getElementById('f_eta').value = s.eta || '';
+  document.getElementById('f_notes').value = s.notes || '';
+  renderClientFields(s.clients || []);
+  document.getElementById('cancelEdit').style.display = 'inline-flex';
+  switchView('add');
+};
+
+window.deleteShipment = async function(id) {
+  if (!confirm('تأكيد حذف هذه الشحنة نهائياً؟')) return;
+  shipments = shipments.filter(s => s.id !== id);
+  await saveAll();
+  toast('تم الحذف');
+};
+
+// ---------- save pipeline: memory -> local storage (fully automatic) ----------
+async function saveAll() {
+  persistLocal();
+  renderSearch();
+  renderAllTable();
+}
+
+// ---------- tabs ----------
+function switchView(name) {
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('section.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+}
+document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+document.getElementById('searchInput').addEventListener('input', renderSearch);
+
+// ---------- export CSV ----------
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  const rows = [['رقم الحاوية','الناقل','الحالة','الموقع','ETA','اسم الزبون','الهاتف','البريد','اسم السيارة','رقم الشاصي']];
+  shipments.forEach(s => {
+    (s.clients && s.clients.length ? s.clients : [{}]).forEach(c => {
+      rows.push([s.bl,s.line,s.status,s.location,s.eta,c.name||'',c.phone||'',c.email||'',c.carName||'',c.chassis||'']);
+    });
+  });
+  const csv = rows.map(r => r.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'shipments-backup.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('تم تنزيل ملف النسخة الاحتياطية');
+});
+
+// ---------- (external file feature removed — plain automatic local storage only) ----------
+
+// ---------- boot ----------
+function boot() {
+  renderClientFields();
+  try {
+    const cached = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY) || '[]');
+    shipments = Array.isArray(cached) ? cached : [];
+  } catch (e) { shipments = []; }
+  renderSearch();
+  renderAllTable();
+}
+
+boot();
+</script>
+</body>
+</html>
