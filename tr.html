@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hattab Auto Tracking - BL Extractor</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Hattab Auto Tracking</h1>
+      <p>استخراج معلومات السيارات من Bill of Lading</p>
+    </div>
+    <div class="top-actions"><span class="version">V1.1</span><button id="themeBtn" class="theme-btn">🌙 ليلي</button></div>
+  </header>
+
+  <main class="container">
+    <section class="card upload-card">
+      <h2>1. رفع ملف BL</h2>
+      <label class="dropzone" for="pdfInput">
+        <span class="upload-icon">📄</span>
+        <strong>اضغط لاختيار ملف PDF</strong>
+        <small>يدعم ملفات BL الخاصة بشحن السيارات</small>
+        <input id="pdfInput" type="file" accept="application/pdf" />
+      </label>
+      <p id="fileName" class="muted">لم يتم اختيار ملف بعد</p>
+      <button id="extractBtn" class="primary" disabled>استخراج البيانات</button>
+      <p id="status" class="status"></p>
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
+        <h2>2. معلومات الشحنة</h2>
+        <span class="badge">BL</span>
+      </div>
+      <div class="grid">
+        <label>رقم BL<input id="blNumber" placeholder="CHN3996272" /></label>
+        <label>رقم الكونتينر<input id="containerNumber" placeholder="FFAU5930276" /></label>
+        <label>رقم الختم<input id="sealNumber" placeholder="M6938147" /></label>
+        <label>شركة الشحن<input id="shippingLine" placeholder="CMA CGM" /></label>
+        <label>السفينة<input id="vessel" placeholder="CMA CGM MARCO POLO" /></label>
+        <label>رقم الرحلة<input id="voyage" placeholder="0MEOTW1MA" /></label>
+        <label>ميناء التحميل<input id="portLoading" placeholder="Shanghai, China" /></label>
+        <label>ميناء التفريغ<input id="portDischarge" placeholder="Ghazaouet, Algeria" /></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
+        <h2>3. السيارات المستخرجة</h2>
+        <button id="addVehicleBtn" class="secondary">+ إضافة سيارة</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>اسم صاحب السيارة</th><th>العلامة</th><th>نوع السيارة</th>
+              <th>اللون</th><th>رقم الشاسيه</th><th>السنة</th><th>Passport No</th><th>NIN</th><th>العنوان</th><th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="vehiclesBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="saveBtn" class="primary">حفظ البيانات</button>
+      <button id="loadBtn" class="secondary">استرجاع آخر حفظ</button>
+      <button id="exportBtn" class="secondary">تصدير JSON</button>
+    </section>
+    <p id="saveStatus" class="status"></p>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
